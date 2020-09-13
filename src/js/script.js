@@ -244,7 +244,19 @@ class BuildingSelectionTooltip {
 		}
 
 		if (this.buildingType.eDemand) {
-			printableStats.push({ icon: imgs.i_power.el, value: this.buildingType.eDemand });
+			printableStats.push({ icon: imgs.i_power.el, value: '-' + this.buildingType.eDemand });
+		}
+
+		if (this.buildingType.eOutput) {
+			printableStats.push({ icon: imgs.i_power.el, value: this.buildingType.eOutput });
+		}
+
+		if (this.buildingType.o2Output) {
+			printableStats.push({ icon: imgs.i_o2.el, value: this.buildingType.o2Output });
+		}
+
+		if (this.buildingType.h2oOutput) {
+			printableStats.push({ icon: imgs.i_h2o.el, value: this.buildingType.h2oOutput });
 		}
 
 		this.h = 64 + (printableStats.length * 48);
@@ -534,6 +546,7 @@ window.addEventListener('DOMContentLoaded', () => {
 	let daysInWeek = 7;
 	let week = 1;
 
+	let hasPlacedHeadquarters = false;
 	let naturalDisaster = 0;
 	/*
 	Natural disasters:
@@ -571,7 +584,7 @@ window.addEventListener('DOMContentLoaded', () => {
 			name: 'Headquarters',
 			key: 't_headquarters',
 			cost: 1000,
-			opCostWk: 50,
+			opCostWk: 10,
 			colonistCapacity: 10,
 			eDemand: 50,
 			eOutput: 50,
@@ -589,48 +602,50 @@ window.addEventListener('DOMContentLoaded', () => {
 		solar: {
 			name: 'Solar Panel',
 			key: 't_solar',
-			cost: 25,
+			cost: 50,
 			opCostWk: 5,
 			eOutput: 100 // energy output
 		},
 		oxygen_gen: {
 			name: 'Oxygen Generator',
 			key: 't_oxygen_gen',
-			cost: 300,
+			cost: 550,
+			opCostWk: 100,
 			o2Output: 500
 		},
 		water_tower: {
 			name: 'Water Tower',
 			key: 't_water_tower',
-			cost: 300,
+			cost: 550,
+			opCostWk: 75,
 			h2oOutput: 500
 		},
 		habitat: {
 			name: 'Habitat',
 			key: 't_habitat',
-			cost: 300,
-			opCostWk: 20,
+			cost: 350,
+			opCostWk: 30,
 			colonistCapacity: 50,
 			eDemand: 50,
 			h2oOutput: 100,
 			o2Output: 100,
 			timeTriggerWeekly: (tile) => {
-				funds += 10;
+				funds += 50;
 			}
 		},
 		ore_sensor: {
 			name: 'Ore Sensor',
 			key: 't_ore_sensor',
-			cost: 75,
-			opCostWk: 10,
+			cost: 350,
+			opCostWk: 15,
 			eDemand: 10,
 			freePlace: true
 		},
 		mine: {
 			name: 'Mine',
 			key: 't_mine',
-			cost: 450,
-			opCostWk: 90,
+			cost: 1000,
+			opCostWk: 150,
 			eDemand: 50,
 			timeTriggerWeekly: (tile) => {
 				let adjacentOre = [];
@@ -695,14 +710,14 @@ window.addEventListener('DOMContentLoaded', () => {
 				let squareDistance = Math.pow(i - mapCenterX, 2) + Math.pow(j - mapCenterY, 2);
 
 				noise.seed(seedStructure);
-				let pVal = noise.perlin2(i / rint(19, 21), j / rint(19, 21));
+				let pVal = noise.perlin2(i / rint(24, 26), j / rint(24, 25));
 
 				noise.seed(seedOre);
 				let oVal = noise.perlin2(i / 10, j / 10);
 				oVal = clamp(oVal, 0.01, 1);
 
 				if (squareDistance <= Math.pow(radius, 2) + (pVal * 100)) {
-					if (pVal > 0.01) {
+					if (pVal > 0.001) {
 						tiles[i][j] = {
 							id: tileIdCounter,
 							x: i,
@@ -915,7 +930,7 @@ window.addEventListener('DOMContentLoaded', () => {
 				ctx.font = 'bold 64px monospace';
 				ctx.fillText('COSMOCOLONIES', canvas.width / 2, 96);
 				ctx.font = '24px monospace';
-				ctx.fillText('(c) 2020 JARED YORK', canvas.width / 2, 138);
+				ctx.fillText('© 2020 JARED YORK', canvas.width / 2, 138);
 				ctx.restore();
 
 
@@ -987,7 +1002,7 @@ window.addEventListener('DOMContentLoaded', () => {
 										let amountPerOre = rint(1, 3);
 										let amountOreToSell = rint(100, 500);
 		
-										if (funds - amountOreToSell > 0) {
+										if (oreStored - amountOreToSell > 0) {
 											funds += amountOreToSell * amountPerOre;
 											oreStored -= amountOreToSell;
 										}
@@ -1014,7 +1029,6 @@ window.addEventListener('DOMContentLoaded', () => {
 						}
 					});
 
-					console.log('sat dishes: ' + satelliteDishes.length);
 					if (satelliteDishes.length > 0) {
 						landerSpawnDelay = landerSpawnDelayInitial * 0.15;
 					}
@@ -1023,7 +1037,6 @@ window.addEventListener('DOMContentLoaded', () => {
 					}
 		
 					if (landerSpawnTick < landerSpawnDelay) {
-						console.log(landerSpawnTick, landerSpawnDelay);
 						landerSpawnTick++;
 					}
 					else {
@@ -1106,9 +1119,8 @@ window.addEventListener('DOMContentLoaded', () => {
 		
 					if (day % daysInWeek == 0) {
 						array2dIterator(tiles, (i, j, tile) => {
-							if (tile.opCostWk) {
+							if (tile.type.opCostWk) {
 								funds -= tile.type.opCostWk;
-								console.log('opcost: ' + tile.type.opCostWk);
 							}
 		
 							if (tile.type.timeTriggerWeekly) {
@@ -1295,6 +1307,14 @@ window.addEventListener('DOMContentLoaded', () => {
 						if (funds < buildingTypes[buildingSelectedKey].cost) {
 							canPlace = false;
 						}
+
+						if (!hasPlacedHeadquarters && buildingTypes[buildingSelectedKey].key != 't_headquarters') {
+							canPlace = false;
+						}
+
+						if (buildingSelectedKey == 'dynamite' && tileUnderSelector.type.key == 't_headquarters') {
+							canPlace = false;
+						}
 					}
 		
 					if (tileUnderSelector && canPlace) {
@@ -1305,6 +1325,10 @@ window.addEventListener('DOMContentLoaded', () => {
 							tiles[tileSelectorMap.x][tileSelectorMap.y].type = buildingTypes[buildingSelectedKey];
 		
 							funds -= buildingTypes[buildingSelectedKey].cost;
+
+							if (buildingSelectedKey == 'headquarters') {
+								hasPlacedHeadquarters = true;
+							}
 						}
 					}
 					else {
@@ -1415,6 +1439,10 @@ window.addEventListener('DOMContentLoaded', () => {
 							btnBuilding.args.bgRecColor = '#34f000';
 						}
 						else {
+							btnBuilding.args.bgRecColor = '#d1190d';
+						}
+
+						if (!hasPlacedHeadquarters && btnBuilding.args.buildingType.key != 't_headquarters') {
 							btnBuilding.args.bgRecColor = '#d1190d';
 						}
 		
